@@ -2,6 +2,25 @@ import re
 from createTranslations import createTranslations
 from random import choice
 
+def getPriors(translationWords):
+	priorPairs = []
+	probMass = 1.0
+	lastIndex = len(translationWords) - 1
+	for i in range(0, lastIndex + 1):
+		thisProbMass = probMass;
+		if i < (lastIndex - 1):
+			probMass /= 2.0
+			thisProbMass = probMass
+		elif i == lastIndex - 1:
+			thisProbMass = 2.0 * probMass / 3.0
+			probMass /= 3.0
+		priorPairs.append((translationWords[i], thisProbMass))
+	return priorPairs
+
+def pickWord(translations):
+	"Return the (word, probability) pair with the highest probability"
+	return max(translations, key = lambda x:x[1])
+
 def baseline():
 	f = open('corpus_dev.txt')
 	sentences = [line.split() for line in f.readlines()]
@@ -10,9 +29,11 @@ def baseline():
 	for sentence in sentences:
 		translation = []
 		for token in sentence:
-			spanishWord = re.sub('[,\.\'\":]','', token).lower()
+			spanishWord = re.sub('[,\.\'\":]','', token).lower()	
 			englishWordArr = translationDict[spanishWord]
-			englishWord = choice(englishWordArr)[1]
+			priors = getPriors([pair[1] for pair in englishWordArr])
+			#englishWord = choice(englishWordArr)[1]
+			englishWord = pickWord(priors)[0]
 			translation.append(englishWord)
 		print ' '.join(sentence), '\n', ' '.join(translation)
 		print '\n'
@@ -20,5 +41,6 @@ def baseline():
 			#i = re.finditer("[,\.\'\":]", token)
 			#indices = [m.start(0) for m in i]
 
-
 baseline()
+
+
