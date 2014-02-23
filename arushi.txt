@@ -34,7 +34,7 @@ hombres
 hora
 horas
 hoy
-huelas
+huellas
 iba
 importante
 infantes
@@ -47,10 +47,10 @@ joven
 la
 las
 le
-levaba
 libera
 libertad
 liesel
+llevaba
 lo
 loera
 los
@@ -72,7 +72,7 @@ mirtos
 modo
 montaña
 morada
-moris
+morris
 moviéndolo
 multitudinaria
 mundo
@@ -92,4 +92,4 @@ o
 objetivo
 ocho
 ofrecida
-ola
+olla
