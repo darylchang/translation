@@ -1,9 +1,9 @@
-posición
-opositora
-ozoni
-para
-parte
-pasó
+posición position,status,location,fix,place
+opositora opposition
+ozoni ozoni
+para for,to,of,towards
+parte part,portion,component
+pasó p
 penal
 pensamientos
 perfecta
