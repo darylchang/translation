@@ -1,13 +1,13 @@
-estadio
-esto
-estrado
-estudiantiles
-está
-estás
-europa
-exigencias
-exista
-expresionista
+estadio stadium
+esto this
+estrado	dair,podium,stage,platform,bandstand
+estudiantiles student
+está be
+estás be 
+europa europe
+exigencias requirements
+exista exist,be,occur,feature 
+expresionista expressionist
 familia
 febrero
 figuran
