@@ -1,95 +1,95 @@
-estadio stadium
-esto this
-estrado	dair,podium,stage,platform,bandstand
-estudiantiles student
-está be
-estás be 
-europa europe
-exigencias requirements
-exista exist,be,occur,feature 
-expresionista expressionist
-familia
-febrero
-figuran
-frecuencia
-fue
-fuego
-general
-generales
-gobierno
-godoy
-grano
-gritando
-guzmán
-ha
-haber
-hablar
-hacia
-harán
-has
-haya
-hermanos
-historia
-hombres
-hora
-horas
-hoy
-huellas
-iba
-importante
-infantes
-informó
-ingresó
-inmueble
-inspirando
-interior
-joven
-la
-las
-le
-libera
-libertad
+estadio [noun:stadium]
+esto [pronoun:this]
+estrado	[noun:dair,podium,stage,platform,bandstand]
+estudiantiles [noun:student]
+está [verb:be]
+estás [verb:be] 
+europa [noun:europe]
+exigencias [noun:requirements]
+exista [verb:there,exist,be,occur,feature] 
+expresionista [noun:expressionist]
+familia [noun:family,household,kin,parentage,blood,kindred,dynasty,folk,race]
+febrero [noun:february]
+figuran [verb:include,figure,rank,think,think up]
+frecuencia [noun:frequency,incidence,prevalence,periodicity,commonness]
+fue [verb:was,go,be,follow,walk,head,lead,pass,pursue,run away]
+fuego [noun:fire,blaze,light,fireplace,hearth]
+general [adjective:general,broad,blanket,extensive,omnibus,sweeping,catch-all] [noun:general]
+generales [adjective:general,broad,blanket,extensive,omnibus,sweeping,catch-all] [noun:general]
+gobierno [noun:government,administration,steering,guidance,ruling,polity,stewardship,decemvir,running,handling]
+godoy 
+grano [noun:grain,kernel,pimple,speck,particle,spot,carbuncle]
+gritando [verb:scream,shout,cry,yell,shout out,call,holler,cry out,call out,howl,shriek,bawl]
+guzmán 
+ha [verb:have]
+haber [verb:have] [noun:assets,havings]
+hablar [verb:talk,speak,chat,communicate,gab]
+hacia [preposition:towards,to,toward,unto,circa]
+harán [verb:do,make,cause,ask,be,render,work,bring,give,perform,carry out,build]
+has [verb:have]
+haya [verb:have]
+hermanos [noun:brethren,brother and sister]
+historia [noun:history,story,tale,record,past,yam]
+hombres [noun:men,menfolk]
+hora [noun:time,hour,tour,term] 
+horas [noun:hours]
+hoy [adverb:today] [noun:today]
+huellas [noun:footprints] [verb:tread,trample,tread down,hollo,holloa]
+iba [verb:go,be,walk,head,pass,pursue,run away,fit,get at]
+importante [adjective:important,significant,large,big,great,leading,considerable]
+infantes [noun:infant]
+informó [verb:report,inform,tell,advise,brief,apprise,apprize,acquaint,enlighten]
+ingresó [verb:enter] [noun:entry,entrance,ingress,deposit,taking]
+inmueble [noun:property]
+inspirando [verb:inspire,prompt,embolden]
+interior [adjective:inside,inner,interior,internal,indoor,inland,domestic] [adverb:inside] [noun:insode,interior,inland]
+joven [adjective:young,youthful,youth,junior,teen] [noun:young,youth,young man,young woman,girl,youngster,juvenile]
+la [article:the] [pronoun:her,it,you]
+las [article:the] [pronoun:them]
+le [pronoun:you,him,it,her,to her]
+libera [verb:liberate,set free,loose,absolve,acquit,set loose,set at large]
+libertad [noun:freedom,liberty,independence]
 liesel
-llevaba
-lo
+llevaba [verb:carry,wear,take,lead,bring,bear,transport,convey]
+lo [article:the] [pronoun:it,him,to it]
 loera
-los
-luego
-luna
+los [article:the] [pronoun:them]
+luego [adverb:then,later,next,later on,now,thereupon,presently] [adjective:early]
+luna [noun:moon]
 lux
-manifestación
-marchas
-marina
-mascota
+manifestación [noun:manifestation,demonstration,rally,display,demo,showing]
+marchas [verb:march,go,go away,walk,move,travel,work,go off,sail]
+marina [noun:marine]
+mascota [noun:mascot]
 mazatlán
-me
-medianamente
-mente
-metí
-miles
-mininos
-mirtos
-modo
-montaña
-morada
+me [pronoun:me,myself]
+medianamente [adverb:moderately]
+mente [noun:mind,mentality,intelligence]
+metí [verb:out,place,insert,introduce,shove,dip,thrust,sink]
+miles [noun:thousands]
+mininos [noun:pussycat,pussy,puss] 
+mirtos [noun:myrtles]
+modo [noun:mode,way,manner,kind,mood,line]
+montaña [nou:mountain]
+morada [noun:dwelling,abode,home]
 morris
-moviéndolo
-multitudinaria
-mundo
-murió
-muy
-más
-negativos
-ningún
-no
-normal
-nuevamente
-nuevo
-nuevos
-nunca
-número
-o
-objetivo
-ocho
-ofrecida
-olla
+moviéndolo [verb:moving it]
+multitudinaria [adjective:massive,multitudinous]
+mundo [noun:world]
+murió [verb:die,expire,kill,die out,go out,demise]
+muy [adverb:very,highly,too,much,most,greatly,precious] [adjective:nice]
+más [adjective:more,most,plus,another] [adverb:more,most,other,else] [noun:more,plus] 
+negativos [adjective:negative,minus,adverse,negatory,privative] [nonu:negative]
+ningún [noun:product]
+no [particle:not,no,nay]
+normal [adjective:normal,regular,ordinary,natural,par,regulation]
+nuevamente [adverb:newly,anew]
+nuevo [adjective:new,fresh,novel,further,renewed,recent,incoming]
+nuevos [adjective:new,fresh,novel,further,renewed,recent,incoming]
+nunca [adverb:never,ever]
+número [noun:number,issue,numeral,size,figure,copy,prime,turn]
+o [conjenction:or,either]
+objetivo [adjective:objective,factual,realistic,detached] [noun:objective,target,aim,goal,end,lens]
+ocho [noun:eight]
+ofrecida [verb:offer]
+olla [noun:pot,saucepan]
