@@ -1,0 +1,17 @@
+=== Tools Used ===
+
+
+
+=== Corpus Sources ===
+Sentences #1-5: El Universal newspaper, Mexico City; mix of current news, social pieces, etc.
+
+Sentences #6-10: Spanish books:
+    6-8. El Secreto, ed. Rhonda Byrne
+    9-10. La ladrona de libros, Markus Zusak
+
+Sentences #11-15: Assorted sources:
+    11. Poem: Arbolé, Arbolé by Federico Garía Lorca
+    12. Poem: Amor, Amor by Gracilaso de la Vega
+    13. December 1999 Article on holiday food, transparent.com
+    14. Article on Fox News Latino about WhatsApp being offline
+    15. Article on CNN Espanol about the rescue of a Miami baby
