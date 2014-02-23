@@ -34,8 +34,9 @@ def baseline():
 			priors = getPriors([pair[1] for pair in englishWordArr])
 			#englishWord = choice(englishWordArr)[1]
 			englishWord = pickWord(priors)[0]
-			translation.append(englishWord)
-		print ' '.join(sentence), '\n', ' '.join(translation)
+			translation.append(englishWord)		
+		translation = (' '.join(translation)).capitalize()
+		print ' '.join(sentence), '\n', translation
 		print '\n'
 			#print spanishWord, englishWord
 			#i = re.finditer("[,\.\'\":]", token)
