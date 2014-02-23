@@ -10,7 +10,8 @@ def createTranslations():
 
 		if not re.search('\[(.*?)\]', translations):
 			# Takes care of proper nouns
-			translationDict[word] = [('noun', word[:1].upper() + word[1:])] 
+			translationDict[word] = [('noun', word.capitalize())]
+			#print 'put', word, translationDict[word]
 		else:
 			# Parse translations
 			posGroups = re.findall('\[(.*?)\]', translations)
