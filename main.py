@@ -30,9 +30,42 @@ class Translator:
 	#		Introduce randomness in picking words, score sentences/n-grams, pick best
 	# - ?
 
-	def toEnglishWord(self, spanishWord, sentence, pickHighest=True, tagging=True):
+
+	def pickCommonTag(sef, wordTag):
+		if wordTag in ['CC']:
+			return 'conjunction'
+		elif wordTag in ['CD', 'EX', 'FW', 'NN', 'NNS', 'NNP', 'NNPS']:
+			return 'noun'
+		elif wordTag in ['JJ', 'JJR', 'JJS', 'LS', 'PDT', 'POS', 'WDT']:
+			return 'adjective'
+		elif wordTag in ['PRP', 'PRP$', 'WP', 'WP$']:
+			return 'pronoun'
+		elif wordTag in ['RB', 'RBR', 'RBS', 'WRB']:
+			return 'adverb'
+		elif wordTag in ['RP']:
+			return 'particle'
+		elif wordTag in ['TO', 'IN']:
+			return 'preposition'
+		elif wordTag in ['UH']:
+			return 'interjection'
+		elif wordTag in ['DT']:
+			return 'article'
+		elif wordTag in ['VB', 'VBD', 'VBG', 'VBN', 'VBP', 'VBZ']:
+			return 'verb'
+
+	def pickEnglishWord(self, spanishWord, pickHighest, wordTag=None):
 		englishWordDict = self.translationDict[spanishWord]
-		candidateWords = englishWordDict.items()[0][1]
+		# == Strategy 2 == 
+		# Tag the Spanish word with its part of speech
+		if wordTag:
+			commonTag = self.pickCommonTag(wordTag)
+			#print spanishWord, wordTag
+			if commonTag in englishWordDict:
+				candidateWords = englishWordDict[commonTag]
+			else:
+				candidateWords = englishWordDict.items()[0][1]
+		else:
+			candidateWords = englishWordDict.items()[0][1]
 		
 		# == Strategy 1 == 
 		# For a given Spanish word, pick the English word with the highest
@@ -43,7 +76,7 @@ class Translator:
 			englishWord = choice(candidateWords)[0]
 		return englishWord
 
-	def translate(self):
+	def translate(self, pickHighest=True, tagging=True):
 		f = open('corpus_dev.txt')
 		sentences = [line.split() for line in f.readlines()]
 		punctuationChars = ',.\'\":'
@@ -52,6 +85,8 @@ class Translator:
 		for sentence in sentences:
 			translation = []
 			punctuation = []
+			noPunct = re.sub('[,\.\'\":]','', ' '.join(sentence))
+			tags = tag(noPunct)
 
 			# Iterate through tokens in sentence
 			for index, token in enumerate(sentence): # TODO: function to tokenize in phrases?
@@ -65,7 +100,11 @@ class Translator:
 				spanishWord = re.sub('[,\.\'\":]','', token).lower()
 
 				# Select English word translation based on translation model
-				englishWord = self.toEnglishWord(spanishWord, sentence)
+				if tagging:
+					wordTag = tags[index][1]
+					englishWord = self.pickEnglishWord(spanishWord, pickHighest, wordTag)
+				else:
+					englishWord = self.pickEnglishWord(spanishWord, pickHighest)
 				translation.append(englishWord)
 			
 			# Format result and print
@@ -76,6 +115,6 @@ class Translator:
 # Run cs124_translate
 if __name__=="__main__":
 	t = Translator()
-	t.translate()
+	t.translate(pickHighest=True, tagging=True)
 
 
