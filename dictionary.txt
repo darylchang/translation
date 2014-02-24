@@ -199,7 +199,7 @@ ozoni
 para [preposition:for,to,of,towards,by,at,as,for the purpose of,as for,in order to,so as to]
 parte [noun:part,portion,component,party,side,share,section,proportion,piece,bit,end],[pronoun:some]
 pasó [noun:step,footprint,passage,pace,stride,tread,move,movement,path] [verb:pass]
-penal penal,penitentiary]
+penal [noun:penitentiary] [adjective:penal]
 pensamientos [noun:thinking]
 perfecta [adjective:perfect,thoroughgoing,ideal,flawless,immaculate,absolute]
 pero [conjunction:but,only,] [noun:but]
