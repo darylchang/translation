@@ -18,8 +18,7 @@ def createDict():
 			posGroups = [(posGroup[0], posGroup[1].split(',')) for posGroup in posGroups]  # ('noun', ['boat', 'car'])
 			wordDict = dict(posGroups)
 
-			# Add prior translation probability to each
-			# each word using exponential decay model
+			# Add prior translation probability to each word using exponential decay model
 			for pos, translationWords in wordDict.items():
 				newTranslationWords = []
 				probMass = 1.0
@@ -35,7 +34,9 @@ def createDict():
 					newTranslationWords.append((translationWords[i], thisProbMass))
 
 				wordDict[pos] = newTranslationWords
-
+			print wordDict
 			translationDict[word] = wordDict
 
 	return translationDict
+
+# createDict()
