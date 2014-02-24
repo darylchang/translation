@@ -34,7 +34,6 @@ def createDict():
 					newTranslationWords.append((translationWords[i], thisProbMass))
 
 				wordDict[pos] = newTranslationWords
-			print wordDict
 			translationDict[word] = wordDict
 
 	return translationDict
