@@ -2,6 +2,8 @@ import re
 from createDict import createDict
 from random import choice
 from pattern.text.es.__init__ import tag
+from nltk.model.ngram import NgramModel
+from nltk.corpus import brown
 
 class Translator:
 
@@ -30,7 +32,6 @@ class Translator:
 	#		Introduce randomness in picking words, score sentences/n-grams, pick best
 	# - ?
 
-
 	def pickCommonTag(sef, wordTag):
 		if wordTag in ['CC']:
 			return 'conjunction'
@@ -50,16 +51,15 @@ class Translator:
 			return 'interjection'
 		elif wordTag in ['DT']:
 			return 'article'
-		elif wordTag in ['VB', 'VBD', 'VBG', 'VBN', 'VBP', 'VBZ']:
+		elif wordTag in ['MD', 'VB', 'VBD', 'VBG', 'VBN', 'VBP', 'VBZ']:
 			return 'verb'
 
 	def pickEnglishWord(self, spanishWord, pickHighest, wordTag=None):
 		englishWordDict = self.translationDict[spanishWord]
 		# == Strategy 2 == 
-		# Tag the Spanish word with its part of speech
+		# Use the part-of-speech tag of the Spanish word
 		if wordTag:
 			commonTag = self.pickCommonTag(wordTag)
-			#print spanishWord, wordTag
 			if commonTag in englishWordDict:
 				candidateWords = englishWordDict[commonTag]
 			else:
