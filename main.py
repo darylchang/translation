@@ -1,15 +1,48 @@
-import re
-from createDict import createDict
+# -*- coding: UTF-8 -*-
+
+import math, re
 from random import choice
-from pattern.text.es.__init__ import tag
+
+from createDict import createDict
+
 from nltk.model.ngram import NgramModel
 from nltk.corpus import brown
+from nltk.probability import LidstoneProbDist
+
+from pattern.text.es.__init__ import tag
+from pattern.text.__init__ import conjugate
 
 class Translator:
 
 	# Create and store dictionary of word-to-word translations
 	def __init__(self):
 		self.translationDict = createDict()
+		est = lambda fdist, bins: LidstoneProbDist(fdist, 0.2)
+		self.ngramModel = NgramModel(3, brown.words(), estimator=est)
+
+	def scoreSentence(self, spanishSentence, englishSentence):
+		totalScore = 0.0
+		for i in range(len(englishSentence)):
+			# Calculate the log prob of the trigram
+			englishWord = englishSentence[i]
+			context = englishSentence[i-2:i]
+			logprob = self.ngramModel.logprob(englishWord, context)
+
+			# Calculate the log prob of translating from the English word
+			# to the Spanish word
+			spanishWord = spanishSentence[i]
+			words = self.translationDict[spanishWord].values()[0]
+			matches = filter(lambda x:x[0] == englishWord,
+									   words)
+			translationProb = math.log(filter(lambda x:x[0] == englishWord,
+									   words)[0][1]) if matches else None
+
+			print spanishWord, englishWord, translationProb
+
+			totalScore += logprob
+			if translationProb:
+				totalScore += translationProb
+		print totalScore
 
 	# Replace punctuation marks in the final translation based on their
 	# positions in the original sentence.
@@ -19,20 +52,23 @@ class Translator:
 				translationTokens[p[0]] = p[1] + translationTokens[p[0]]
 			elif p[2] == 'after':
 				translationTokens[p[0]] = translationTokens[p[0]] + p[1]
-		return ' '.join(translationTokens)
+		newTokens = [t.decode('utf-8') for t in translationTokens]
+		return ' '.join(newTokens)
 
 	# TODO strategies
-	# - (BIG) Run Spanish POS tagger, select translations with correct POS
-	#		- make sure all dictionary translations are ordered by "goodness"
-	# - (BIG) After running POS tagger, reorder noun-adjectives as adjectives-noun
-	# - (BIG PROBLEM) Fix verb form; need conjugations.
-	#		Put all verb forms in dictionary? Or use Spanish conjugation tool?
-	#		If infinitive, replace with phrase "to [definition]"
-	# - (BIG) Introduce English language model to improve translations
-	#		Introduce randomness in picking words, score sentences/n-grams, pick best
-	# - ?
+	# 1: Assign prior probability based on commonality of each translation
+	# 2: Assign a translation from the POS translation group corresponding to
+	#		the part of speech of the original word.
+	# 3: Use POS tags to conjugate the English verb once it's translated.
+	# TODO:
+	# 4: Expand verb conjugation by determining person and number of original Spanish verb.
+	# 5: After running POS tagger, reorder noun-adjectives as adjectives-noun.
+	# 6: TODO clarify, Use English language model to score potential sentences,
+	# 		for example, by taking top 3 translations of each word and other changes
+	# 		and creating a prior probability.
+	# 7: Remove 'a', 
 
-	def pickCommonTag(sef, wordTag):
+	def pickCommonTag(self, wordTag):
 		if wordTag in ['CC']:
 			return 'conjunction'
 		elif wordTag in ['CD', 'EX', 'FW', 'NN', 'NNS', 'NNP', 'NNPS']:
@@ -54,6 +90,24 @@ class Translator:
 		elif wordTag in ['MD', 'VB', 'VBD', 'VBG', 'VBN', 'VBP', 'VBZ']:
 			return 'verb'
 
+	# TODO documentation/explanation
+	def adjustVerb(self, spanishWord, tag, englishVerb):
+		if tag == 'VB':
+			return conjugate(englishVerb, 'inf')
+		elif tag == 'VBG':
+			return conjugate(englishVerb, 'part')
+		elif tag == 'VBN':
+			return conjugate(englishVerb, 'ppart')
+		elif tag == 'VBD':
+			return conjugate(englishVerb, 'p')
+		elif tag == 'VBP':
+			return conjugate(englishVerb, '1sg')
+		elif tag == 'VBZ':
+			return conjugate(englishVerb, '3sg')
+		elif tag == 'MD':
+			return englishVerb # return conjugate(englishVerb, tense='PRESENT', negated=False)
+		return englishVerb
+
 	def pickEnglishWord(self, spanishWord, pickHighest, wordTag=None):
 		englishWordDict = self.translationDict[spanishWord]
 		# == Strategy 2 == 
@@ -69,11 +123,20 @@ class Translator:
 		
 		# == Strategy 1 == 
 		# For a given Spanish word, pick the English word with the highest
-		# translation probability. 
+		# translation probability. See createDict for the exponential decay
+		# function that assigns translation model priors.
 		if pickHighest:
 			englishWord = max(candidateWords, key=lambda x:x[1])[0]
 		else:
 			englishWord = choice(candidateWords)[0]
+		
+		# == Strategy X == TODO doc
+		supportedTags = set(['MD', 'VB', 'VBG', 'VBN', 'VBD', 'VBP', 'VBZ'])
+		if wordTag in supportedTags:
+			englishAdjusted = self.adjustVerb(spanishWord, wordTag, englishWord)
+			#print 'Adjusted', englishWord, 'to:', englishAdjusted
+			return englishAdjusted
+
 		return englishWord
 
 	def translate(self, pickHighest=True, tagging=True):
@@ -86,6 +149,7 @@ class Translator:
 			translation = []
 			punctuation = []
 			noPunct = re.sub('[,\.\'\":]','', ' '.join(sentence))
+			noPunct = noPunct.decode('utf-8')
 			tags = tag(noPunct)
 
 			# Iterate through tokens in sentence
