@@ -9,9 +9,10 @@ from nltk.model.ngram import NgramModel
 from nltk.corpus import brown
 from nltk.probability import LidstoneProbDist
 
-from pattern.text.es.__init__ import tag
-from pattern.es import parse as spanishParse, split as spanishSplit
-from pattern.text.__init__ import conjugate
+from pattern.text.es import tag, find_lemmata
+from pattern.text.es.inflect import Verbs as SpanishVerbs
+from pattern.text.en.inflect import Verbs as EnglishVerbs
+from pattern.text import conjugate
 
 class Translator:
 
@@ -19,7 +20,7 @@ class Translator:
 	def __init__(self):
 		self.translationDict = createDict()
 		est = lambda fdist, bins: LidstoneProbDist(fdist, 0.2)
-		self.ngramModel = NgramModel(3, brown.words(), estimator=est)
+		# self.ngramModel = NgramModel(3, brown.words(), estimator=est)
 
 	# TODO: put sentence in its own object, where each object holds both the original
 	# and translated sentence and the sum of the logprobs of the translation model
@@ -137,7 +138,7 @@ class Translator:
 		
 		# == Strategy X == TODO doc
 		supportedTags = set(['MD', 'VB', 'VBG', 'VBN', 'VBD', 'VBP', 'VBZ'])
-		print 'Tag of', spanishWord, '=', wordTag
+		#print 'Tag of', spanishWord, '=', wordTag
 		if wordTag in supportedTags:
 			englishAdjusted = self.adjustVerb(spanishWord, wordTag, englishWord)
 			#print 'Adjusted', englishWord, 'to:', englishAdjusted
@@ -189,6 +190,43 @@ class Translator:
 					englishWord = self.pickEnglishWord(spanishWord, pickHighest, wordTag)
 				else:
 					englishWord = self.pickEnglishWord(spanishWord, pickHighest)
+ 
+                # === Strategy 3 === 
+				# Conjugate English verb based on Spanish verb tense	
+				sv = SpanishVerbs()
+				ev = EnglishVerbs()
+				tenses = sv.TENSES
+				tenseMap = {'past':'past', 'infinitive':'infinitive', 'future':'infinitive', 'present':'present'}
+				moodMap = {None:None, 'indicative':'indicative', 'imperative':'indicative', 'conditional':'indicative', 'subjunctive':'indicative'}
+				aspectMap = {None:None, 'perfective':'imperfective', 'imperfective':'imperfective', 'progressive':'progressive'}
+				
+				if wordTag in [u'MD', u'VBG', u'VB', u'VBN']:
+					verb = tags[index][0]
+					base = find_lemmata([[verb, tags[index][1]]])[0][2]
+					# Find the tense that will recreate the verb
+					for tense in tenses:
+						candidateVerb = sv.conjugate(base,          # estar
+													tense[0],   # future
+													tense[1],   # 1
+													tense[2],   # plural
+													tense[3],   # indicative
+													tense[4])   # imperfective
+						if candidateVerb == verb:
+							englishTense = (tenseMap[tense[0]], tense[1], 
+											tense[2], moodMap[tense[3]],
+											aspectMap[tense[4]])
+							#print verb, englishWord, englishTense
+							englishWord = ev.conjugate(englishWord, 
+											   englishTense[0],
+											   englishTense[1],
+											   englishTense[2],
+											   englishTense[3],
+											   englishTense[4])	
+							if tense[0] == 'future':
+								englishWord = 'will ' + englishWord
+							elif englishTense[0] == 'infinitive':
+								englishWord = 'to ' + englishWord
+
 				translation.append(englishWord)
 			
 			# Format result and print
