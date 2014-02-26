@@ -10,6 +10,7 @@ from nltk.corpus import brown
 from nltk.probability import LidstoneProbDist
 
 from pattern.text.es.__init__ import tag
+from pattern.es import parse as spanishParse, split as spanishSplit
 from pattern.text.__init__ import conjugate
 
 class Translator:
@@ -20,6 +21,10 @@ class Translator:
 		est = lambda fdist, bins: LidstoneProbDist(fdist, 0.2)
 		self.ngramModel = NgramModel(3, brown.words(), estimator=est)
 
+	# TODO: put sentence in its own object, where each object holds both the original
+	# and translated sentence and the sum of the logprobs of the translation model
+	# *FOR EACH SPANISH WORD* (so that multiple english words may be produced from
+	# single Spanish word).
 	def scoreSentence(self, spanishSentence, englishSentence):
 		totalScore = 0.0
 		for i in range(len(englishSentence)):
@@ -132,6 +137,7 @@ class Translator:
 		
 		# == Strategy X == TODO doc
 		supportedTags = set(['MD', 'VB', 'VBG', 'VBN', 'VBD', 'VBP', 'VBZ'])
+		print 'Tag of', spanishWord, '=', wordTag
 		if wordTag in supportedTags:
 			englishAdjusted = self.adjustVerb(spanishWord, wordTag, englishWord)
 			#print 'Adjusted', englishWord, 'to:', englishAdjusted
@@ -151,6 +157,20 @@ class Translator:
 			noPunct = re.sub('[,\.\'\":]','', ' '.join(sentence))
 			noPunct = noPunct.decode('utf-8')
 			tags = tag(noPunct)
+
+			# ===> TODO: 2 strategies: verb and noun correction
+			# get spanish tags (english tags too?), parse tree via:
+			# 		taggedSentence = spanishSplit(spanishParse(sentence, tagset='parole'))[0]
+			#		for word in taggedSentence (see http://www.clips.ua.ac.be/pages/pattern-es bottom for format):
+			# 		if word.tag is some verb tag (see http://www.lsi.upc.edu/~nlp/SVMTool/parole.html):
+			#			base = findLemmata(verb, tag)
+			#			for tense in Verbs.TENSES:
+			#				conjugated = conjugate(base, tense)
+			#				if conjugated == word: use english.conjugate(tense)
+			#			if no match, use english word
+			#		if word.tag is some noun tag:
+			#			if spanish noun is pluralized
+			#				pluralize translation
 
 			# Iterate through tokens in sentence
 			for index, token in enumerate(sentence): # TODO: function to tokenize in phrases?
