@@ -14,6 +14,21 @@ from pattern.text.es.inflect import Verbs as SpanishVerbs
 from pattern.text.en.inflect import Verbs as EnglishVerbs
 from pattern.text import conjugate
 
+# TODO strategies
+# 1: Assign prior probability based on commonality of each translation
+# 2: Assign a translation from the POS translation group corresponding to
+#		the part of speech of the original word.
+# 3: Use POS tags to conjugate the English verb once it's translated.
+# TODO:
+# 4: Expand verb conjugation by determining person and number of original Spanish verb.
+# 5: After running POS tagger, reorder noun-adjectives as adjectives-noun.
+# 6: TODO clarify, Use English language model to score potential sentences,
+# 		for example, by taking top 3 translations of each word and other changes
+# 		and creating a prior probability.
+# 7: Try removing common words in the candidate sentences: 'a', 'que', 'en', etc
+# 8: Add subjects to Spanish verbs after given conjugation? Part of candidate sentences,
+#		evaluate with language model
+
 class Translator:
 
 	# Create and store dictionary of word-to-word translations
@@ -21,6 +36,7 @@ class Translator:
 		self.translationDict = createDict()
 		est = lambda fdist, bins: LidstoneProbDist(fdist, 0.2)
 		# self.ngramModel = NgramModel(3, brown.words(), estimator=est)
+		# TODO: store model in its own file?
 
 	# TODO: put sentence in its own object, where each object holds both the original
 	# and translated sentence and the sum of the logprobs of the translation model
@@ -60,19 +76,6 @@ class Translator:
 				translationTokens[p[0]] = translationTokens[p[0]] + p[1]
 		newTokens = [t.decode('utf-8') for t in translationTokens]
 		return ' '.join(newTokens)
-
-	# TODO strategies
-	# 1: Assign prior probability based on commonality of each translation
-	# 2: Assign a translation from the POS translation group corresponding to
-	#		the part of speech of the original word.
-	# 3: Use POS tags to conjugate the English verb once it's translated.
-	# TODO:
-	# 4: Expand verb conjugation by determining person and number of original Spanish verb.
-	# 5: After running POS tagger, reorder noun-adjectives as adjectives-noun.
-	# 6: TODO clarify, Use English language model to score potential sentences,
-	# 		for example, by taking top 3 translations of each word and other changes
-	# 		and creating a prior probability.
-	# 7: Remove 'a', 
 
 	def pickCommonTag(self, wordTag):
 		if wordTag in ['CC']:
