@@ -110,7 +110,7 @@ class Translator:
                 # Record punctuation at start and end for later recovery
                 if token[0] in punctuationChars:
                     punctuation.append((index, token[0], 'before'))
-                if token[-2] in punctuationChars:
+                if len(token) > 1 and token[-2] in punctuationChars:
                     punctuation.append((index, token[-2], 'after'))
                 if token[-1] in punctuationChars:
                     punctuation.append((index, token[-1], 'after'))
