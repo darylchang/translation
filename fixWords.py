@@ -88,7 +88,8 @@ def flattenDict(dict):
     for word in wordSet:
         maxProb = max([tup[1] for tup in tupleList if tup[0]==word])
         arr.append((word, maxProb))
-    return arr
+    sumProbs = sum([entry[1] for entry in arr])
+    return [(entry[0], entry[1] / sumProbs) for entry in arr]
 
 def getFixedCandidateWords(englishWordDict, spanishWord, tag):
     candidateWords = flattenDict(englishWordDict.items())
@@ -98,6 +99,6 @@ def getFixedCandidateWords(englishWordDict, spanishWord, tag):
         if commonTag in englishWordDict:
             candidateWords = englishWordDict[commonTag]
             fixWords(candidateWords, spanishWord, tag, commonTag)
-            
+
     candidateWords.sort(key=lambda x: x[1], reverse=True)
     return candidateWords
