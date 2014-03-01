@@ -26,7 +26,8 @@ class Translator:
         # with open('ngramModel.pickle','r') as handle:
         #     self.ngramModel = dill.load(handle)
         words = brown.words()
-        self.ngramModel = NgramModel(3, words, estimator=est)
+        self.ngramModel = None #NgramModel(3, words, estimator=est)
+        self.beamSize = 4
         # TODO: store model in its own file?
 
     # STRATEGIES FOR GETTING SENTENCES
@@ -46,10 +47,9 @@ class Translator:
         return candidates[0][0], candidates[0][1]
 
     def getSentences(self, spanishSentence, candidatesList, tagList):
-        sentences = []
-
         # TODO: generate many candidate sentences. The trivial case (take first word
         # from every candidate) is shown here.
+        sentences = []
         for i in range(1,5000):
             tokens = []
             probs = []
@@ -58,14 +58,37 @@ class Translator:
                 tokens.append(token)
                 probs.append(prob)
             sentences.append(Sentence(tokens, probs, self.ngramModel))
-
-        #tokens = [candidate[0][0] for candidate in candidatesList]
-        #probs = [candidate[0][1] for candidate in candidatesList]
-        #sentence = Sentence(tokens, probs, self.ngramModel)
-        #sentences.append(sentence)
         return sentences
 
-    def getBestTranslation(self, spanishSentence, candidatesList, tagList):
+    def getBestTranslation(self, spanishSentence, candidatesList, tagList, beamSearch=True):
+        # if beamSearch:
+        #     sentences = [([''],0.) for i in xrange(self.beamSize)]
+        #     for i in range(len(spanishSentence)):
+        #         candidateSentences = []
+        #         candidateWords = candidatesList[i]
+        #         for sentence, prob in sentences:
+        #             for candidateWord, candidateProb in candidateWords:
+        #                 newSentence = sentence + [candidateWord]
+        #                 context = sentence[-2:]
+        #                 newProb = prob + math.log(candidateProb) - self.ngramModel.logprob(candidateWord, context)
+        #                 candidateSentences.append((newSentence, newProb))
+        #         candidateSentences.sort(key=lambda x:x[1], reverse=True)
+                
+        #         # Eliminate duplicates
+        #         temp = []
+        #         for candidateSentence in candidateSentences:
+        #             if candidateSentence not in temp:
+        #                 temp.append(candidateSentence)
+        #         candidateSentences = temp
+
+        #         sentences = candidateSentences[:self.beamSize]
+        #         # print sentences
+
+        #     bestSentence = max(sentences, key=lambda x:x[1])
+        #     tokens = [word for token in bestSentence[0] for word in token.split(' ')]
+        #     phraseTokens = bestSentence[0]
+        #     return tokens
+        # else:
         sentences = self.getSentences(spanishSentence, candidatesList, tagList)
         sentenceScores = [sentence.score() for sentence in sentences]
         bestSentence = sentences[sentenceScores.index(max(sentenceScores))]
@@ -104,6 +127,12 @@ class Translator:
                 sentence.pop(i)
                 tags.pop(i)
 
+        # # Correct part-of-speech tagging
+        # indices = [i for i,x in enumerate(sentence) if x in ['el', 'la', 'los', 'las']]
+        # for i in indices:
+        #     if tags[i+1][1] not in ['NN', 'NNS', 'NNP', 'NNPS']:
+        #         tags[i+1] = (tags[i+1][0], 'NN')
+
         # Remove any 'de' that follows a preposition
         indices = [i for i,x in enumerate(sentence) if x=='de']
         removed = 0
@@ -130,7 +159,36 @@ class Translator:
                 sentence = sentence[:adjustedIndex] + ['el'] + sentence[adjustedIndex:]
                 tags = tags[:adjustedIndex] + [(tags[adjustedIndex][0], 'DT')] + tags[adjustedIndex:]
 
-        # Flip 
+        # Flip adjectives and nouns
+        indices = [i for i,x in enumerate(tags) if x[1]=='JJ']
+        for i in indices:
+            if i-1>0 and tags[i-1][1] in ['NN', 'NNS']:
+                punctuationChars = ',.\'\":' 
+                rawNoun, rawAdj = sentence[i-1], sentence[i]
+
+                # Swap punctuation
+                if rawNoun[0] in punctuationChars:
+                    adj = rawNoun[0] + rawAdj
+                    noun = rawNoun[1:]
+                elif rawNoun[-1] in punctuationChars:
+                    adj = rawAdj + rawNoun[-1]
+                    noun = rawNoun[:-1]
+                elif rawAdj[0] in punctuationChars:
+                    noun = rawAdj[0] + rawNoun
+                    adj = rawAdj[1:]
+                elif rawAdj[-1] in punctuationChars:
+                    noun = rawNoun + rawAdj[-1]
+                    adj = rawAdj[:-1]
+                else:
+                    adj = rawAdj
+                    noun = rawNoun
+
+                sentence[i-1] = adj
+                sentence[i] = noun
+
+                tempTag = tags[i]
+                tags[i-1] = tags[i]
+                tags[i] = tempTag
 
         return sentence, tags
 
