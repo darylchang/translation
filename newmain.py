@@ -127,7 +127,7 @@ class Translator:
                 sentence.pop(i)
                 tags.pop(i)
 
-        # # Correct part-of-speech tagging
+        # # Words after determiners must be nouns
         # indices = [i for i,x in enumerate(sentence) if x in ['el', 'la', 'los', 'las']]
         # for i in indices:
         #     if tags[i+1][1] not in ['NN', 'NNS', 'NNP', 'NNPS']:
@@ -189,6 +189,18 @@ class Translator:
                 tempTag = tags[i]
                 tags[i-1] = tags[i]
                 tags[i] = tempTag
+
+        # Flip verbs and negation ('no era' -> 'era no')
+        indices = [i for i,x in enumerate(sentence) if x=='no']
+        for i in indices:
+            if i+1<len(tags) and tags[i+1][1] in ['VB', 'VBD', 'VBG', 'VBP', 'VBZ']:
+                verbTag = tags[i+1]
+                verb = sentence[i+1]
+
+                sentence[i+1] = sentence[i]
+                tags[i+1] = tags[i]
+                sentence[i] = verb
+                tags[i] = verbTag
 
         return sentence, tags
 
