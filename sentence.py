@@ -2,12 +2,6 @@ import math
 
 class Sentence:
 
-    def getLogProb(self, probabilities):
-        sum = 0.0
-        for prob in probabilities:
-            sum += math.log(prob)
-        return sum
-
     # Create a sentence with two things:
     # 1. A list of English tokens (may be multiple words). For example:
     #   ['The', 'cat', 'went to', 'the', 'city park']
@@ -17,20 +11,26 @@ class Sentence:
         self.tokens = [word for token in tokensList for word in token.split(' ')]
         self.phraseTokens = tokensList
         self.priorLogProb = self.getLogProb(probabilities)
-        self.priorWeight = 0.6 # TODO: adjust up/down as needed
+        self.priorWeight = 0.8 # TODO: adjust up/down as needed
         self.model = translationModel
 
+    def getLogProb(self, probabilities):
+        sum = 0.0
+        for prob in probabilities:
+            sum += math.log(prob)
+        return sum
+
     def score(self):
-        priorScore = self.priorWeight * (self.priorLogProb + 40.0)
+        priorScore = self.priorWeight * (self.priorLogProb)
         langModelScore = 0.0
 
-        if(self.model):
+        if self.model:
             for i in range(len(self.tokens)):
                 englishWord = self.tokens[i]
                 context = self.tokens[i-2:i]
-                langModelScore += self.model.logprob(englishWord, context)
+                langModelScore -= self.model.logprob(englishWord, context)
 
-        langModelScore /= (len(self.tokens) / 2) # Normalize by length of list
+        langModelScore /= len(self.tokens) * 2 # Normalize by length of list
         langModelScore *= (1.0 - self.priorWeight)
         totalScore = priorScore + langModelScore
         #print 'Returning total score =', totalScore, 'from components langModel =', langModelScore, 'priorModel =', priorScore

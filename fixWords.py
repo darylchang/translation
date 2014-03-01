@@ -1,5 +1,6 @@
 from pattern.text.es.inflect import Verbs as SpanishVerbs
 from pattern.text.en.inflect import Verbs as EnglishVerbs
+from pattern.text.en.inflect import pluralize
 from pattern.text.es import find_lemmata
 from pattern.text import conjugate
 
@@ -16,7 +17,7 @@ def fixVerb(elem, verb, tag):
     base = find_lemmata([[verb, tag]])[0][2]
     # Find the tense that will recreate the verb
     for tense in tenses:
-        candidateVerb = sv.conjugate(base,          # estar
+        candidateVerb = sv.conjugate(base,      # estar
                                     tense[0],   # future
                                     tense[1],   # 1
                                     tense[2],   # plural
@@ -62,8 +63,15 @@ def pickCommonTag(wordTag):
     elif wordTag in ['MD', 'VB', 'VBD', 'VBG', 'VBN', 'VBP', 'VBZ']:
         return 'verb'
 
+def fixNoun(elem, spanishNoun, tag):
+    if tag in [u'NNS', u'NNPS']:
+        return (pluralize(elem[0]), elem[1])
+    else:
+        return elem
+
 def fixNouns(candidates, spanishWord, tag):
-    return
+    for index, elem in enumerate(candidates):
+        candidates[index] = fixNoun(elem, spanishWord, tag)
 
 def fixVerbs(candidates, spanishWord, tag):
     for index, elem in enumerate(candidates):
@@ -92,6 +100,7 @@ def flattenDict(dict):
     return [(entry[0], entry[1] / sumProbs) for entry in arr]
 
 def getFixedCandidateWords(englishWordDict, spanishWord, tag):
+
     candidateWords = flattenDict(englishWordDict.items())
     # also: take max of probabilities if same translation in multiple pos
     if tag:

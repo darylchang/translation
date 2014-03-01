@@ -1,7 +1,7 @@
 # -*- coding: UTF-8 -*-
 
 # Python library
-import math, re
+import copy, math, re
 from random import choice, random
 
 # Our files
@@ -15,17 +15,18 @@ from nltk.corpus import brown
 from nltk.probability import LidstoneProbDist
 from pattern.text.es import tag
 
+import dill
+
 class Translator:
 
     # Create and store dictionary of word-to-word translations
     def __init__(self):
         self.translationDict = createDict()
         est = lambda fdist, bins: LidstoneProbDist(fdist, 0.2)
-        #self.ngramModel = None
-        self.ngramModel = NgramModel(3, brown.words(), estimator=est)
-        # f = open('my_classifier.pickle', 'wb')
-        # dumps(self.ngramModel, f)
-        # f.close()
+        # with open('ngramModel.pickle','r') as handle:
+        #     self.ngramModel = dill.load(handle)
+        words = brown.words()
+        self.ngramModel = NgramModel(3, words, estimator=est)
         # TODO: store model in its own file?
 
     # STRATEGIES FOR GETTING SENTENCES
@@ -49,7 +50,7 @@ class Translator:
 
         # TODO: generate many candidate sentences. The trivial case (take first word
         # from every candidate) is shown here.
-        for i in range(1,100):
+        for i in range(1,5000):
             tokens = []
             probs = []
             for candidates in candidatesList:
@@ -72,29 +73,84 @@ class Translator:
 
     # Replace punctuation marks in the final translation based on their
     # positions in the original sentence.
-    def addPunctuation(self, translationTokens, punctuation):
+    def addPunctuation(self, phraseTokens, punctuation):
         for p in punctuation:
             if p[2] == 'before':
-                translationTokens[p[0]] = p[1] + translationTokens[p[0]]
+                phraseTokens[p[0]] = p[1] + phraseTokens[p[0]]
             elif p[2] == 'after':
-                translationTokens[p[0]] = translationTokens[p[0]] + p[1]
-        newTokens = [t.decode('utf-8') for t in translationTokens]
+                phraseTokens[p[0]] = phraseTokens[p[0]] + p[1]
+        newTokens = [t.decode('utf-8') for t in phraseTokens]
         return newTokens
+
+    def removeDuplicates(self, translation):
+        translation = translation.split()
+        newTranslation = []
+        i = 0
+        while i < len(translation) - 1:
+            newTranslation.append(translation[i])
+            while translation[i] == translation[i+1]:
+                i += 1
+            i += 1
+        newTranslation.append(translation[i])            
+        return ' '.join(newTranslation)
+        
+    def processSentence(self, rawSentence, tags):
+        wordsToRemove = ['a', 'le', 'se']
+        sentence = copy.deepcopy(rawSentence)
+        sentence = [word.lower() for word in sentence]
+        for word in wordsToRemove:
+            while word in sentence:
+                i = sentence.index(word)
+                sentence.pop(i)
+                tags.pop(i)
+
+        # Remove any 'de' that follows a preposition
+        indices = [i for i,x in enumerate(sentence) if x=='de']
+        removed = 0
+        for i in indices:
+            if tags[i-1-removed][1] == u'IN':
+                sentence.pop(i-removed)
+                tags.pop(i-removed)
+                removed += 1
+
+        # Replace any 'al' that follows a verb with 'el'
+        indices = [i for i,x in enumerate(sentence) if x=='al']
+        for i in indices:
+            if tags[i-1][1] in ['MD', 'VB', 'VBD', 'VBG', 'VBP', 'VBZ']:
+                sentence[i] = 'el'
+                tags[i] = ('el', 'DT')
+
+        # Add a determiner in front of nouns that follow prepositions
+        indices = [i for i,x in enumerate(tags) if x[1] in ['NN', 'NNS']]
+        added = 0
+        for i in indices:
+            adjustedIndex = i + added
+            if tags[adjustedIndex-1][1] == 'IN':
+                added += 1
+                sentence = sentence[:adjustedIndex] + ['el'] + sentence[adjustedIndex:]
+                tags = tags[:adjustedIndex] + [(tags[adjustedIndex][0], 'DT')] + tags[adjustedIndex:]
+
+        # Flip 
+
+        return sentence, tags
 
     def translate(self, pickHighest=True, tagging=True):
         # TODO: configure turning off various parts? or reimplement baseline
         f = open('corpus_dev.txt')
-        sentences = [line.split() for line in f.readlines()]
-        punctuationChars = ',.\'\":'
+        rawSentences = [line.split() for line in f.readlines()]
+        punctuationChars = ',.\'\":'    
 
         # Iterate through sentences and create translation for each
-        for sentence in sentences:
+        for rawSentence in rawSentences:
             punctuation = []
             
             # Do part-of-speech tagging
-            noPunct = re.sub('[,\.\'\":]','', ' '.join(sentence))
+            noPunct = re.sub('[,\.\'\":]','', ' '.join(rawSentence))
             noPunct = noPunct.decode('utf-8')
             tags = tag(noPunct)
+
+            # Remove words
+            sentence, tags = self.processSentence(rawSentence, tags)
 
             # For each token in the Spanish sentence, store a list of candidates
             # in this outer list. Each candidate is a (translation, probability)
@@ -129,11 +185,12 @@ class Translator:
             # Format result and print
             translationTokens = self.addPunctuation(phraseTokens, punctuation)
             translation = ' '.join(translationTokens)
+            translation = self.removeDuplicates(translation)
             translation = translation[0].capitalize() + translation[1:] # Capitalize first word
             #sentence = [token.encode('utf-8') for token in sentence]
             # print sentence
             # print u" ".join(sentence)
-            joinedSentence = " ".join(sentence)
+            joinedSentence = " ".join(rawSentence)
             print joinedSentence, '\n', translation, '\n\n'
 
 # Run cs124_translate
