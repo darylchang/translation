@@ -6,7 +6,7 @@ from random import choice, random
 
 # Our files
 from createDict import createDict
-from fixWords import getFixedCandidateWords
+from fixWords import getFixedCandidateWords, pickCommonTag
 from sentence import Sentence
 
 # NLP Modules
@@ -26,7 +26,7 @@ class Translator:
         # with open('ngramModel.pickle','r') as handle:
         #     self.ngramModel = dill.load(handle)
         words = brown.words()
-        self.ngramModel = None #NgramModel(3, words, estimator=est)
+        self.ngramModel = NgramModel(3, words, estimator=est)
         self.beamSize = 4
         # TODO: store model in its own file?
 
@@ -46,11 +46,9 @@ class Translator:
                 return candidate[0], candidate[1]
         return candidates[0][0], candidates[0][1]
 
-    def getSentences(self, spanishSentence, candidatesList, tagList):
-        # TODO: generate many candidate sentences. The trivial case (take first word
-        # from every candidate) is shown here.
+    def generateSentences(self, candidatesList, num=5000):
         sentences = []
-        for i in range(1,5000):
+        for i in range(1, num):
             tokens = []
             probs = []
             for candidates in candidatesList:
@@ -58,6 +56,22 @@ class Translator:
                 tokens.append(token)
                 probs.append(prob)
             sentences.append(Sentence(tokens, probs, self.ngramModel))
+        return sentences
+
+    # Post-translation processing to generate better sentences
+    def getPermutedSentences(self, candidatesList, tagList):
+        sentences = []
+
+        # Do general permutations on the candidates list, i.e., removing
+        # words, adding words, English word reordering, etc.
+        # TODO: "house white" tagged as noun-noun in spanish. Try retagging
+        # in English?
+        return sentences[]
+
+    def getSentences(self, spanishSentence, candidatesList, tagList):
+        sentences = []
+        sentences.extend(self.generateSentences(candidatesList))
+        sentences.extend(self.getPermutedSentences(candidatesList, tagList))
         return sentences
 
     def getBestTranslation(self, spanishSentence, candidatesList, tagList, beamSearch=True):
