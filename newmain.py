@@ -2,11 +2,12 @@
 
 # Python library
 import math, re
+from copy import deepcopy
 from random import choice, random
 
 # Our files
 from createDict import createDict
-from fixWords import getFixedCandidateWords
+from fixWords import getFixedCandidateWords, pickCommonTag
 from sentence import Sentence
 
 # NLP Modules
@@ -44,12 +45,9 @@ class Translator:
                 return candidate[0], candidate[1]
         return candidates[0][0], candidates[0][1]
 
-    def getSentences(self, spanishSentence, candidatesList, tagList):
+    def generateSentences(self, candidatesList, num=100):
         sentences = []
-
-        # TODO: generate many candidate sentences. The trivial case (take first word
-        # from every candidate) is shown here.
-        for i in range(1,100):
+        for i in range(1, num):
             tokens = []
             probs = []
             for candidates in candidatesList:
@@ -57,11 +55,29 @@ class Translator:
                 tokens.append(token)
                 probs.append(prob)
             sentences.append(Sentence(tokens, probs, self.ngramModel))
+        return sentences
 
-        #tokens = [candidate[0][0] for candidate in candidatesList]
-        #probs = [candidate[0][1] for candidate in candidatesList]
-        #sentence = Sentence(tokens, probs, self.ngramModel)
-        #sentences.append(sentence)
+    def reorderCandidatesList(self, candidatesList, tagList):
+        newList = deepcopy(candidatesList)
+        newTags = deepcopy(tagList)
+
+        for i in range(1,len(candidatesList) - 1):
+            thisTag = pickCommonTag(tagList[i][1])
+            nextTag = pickCommonTag(tagList[i+1][1])
+
+            # Swap noun-adjective
+            if(thisTag == 'noun' and nextTag == 'adjective'):
+                newList[i], newList[i+1] = newList[i+1], newList[i]
+                tagList[i], tagList[i+1] = tagList[i+1], tagList[i]
+        return newList
+
+    def getSentences(self, spanishSentence, candidatesList, tagList):
+        sentences = []
+        reorderedList = self.reorderCandidatesList(candidatesList, tagList)
+
+        sentences.extend(self.generateSentences(reorderedList))
+        sentences.extend(self.generateSentences(reorderedList))
+
         return sentences
 
     def getBestTranslation(self, spanishSentence, candidatesList, tagList):
