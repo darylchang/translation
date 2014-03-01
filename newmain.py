@@ -58,11 +58,20 @@ class Translator:
             sentences.append(Sentence(tokens, probs, self.ngramModel))
         return sentences
 
+    # Post-translation processing to generate better sentences
+    def getPermutedSentences(self, candidatesList, tagList):
+        sentences = []
+
+        # Do general permutations on the candidates list, i.e., removing
+        # words, adding words, English word reordering, etc.
+        # TODO: "house white" tagged as noun-noun in spanish. Try retagging
+        # in English?
+        return sentences[]
+
     def getSentences(self, spanishSentence, candidatesList, tagList):
         sentences = []
-        permutedCandidates = self.permuteCandidatesList(candidatesList, tagList)
         sentences.extend(self.generateSentences(candidatesList))
-        # Do some other sentence permutations
+        sentences.extend(self.getPermutedSentences(candidatesList, tagList))
         return sentences
 
     def getBestTranslation(self, spanishSentence, candidatesList, tagList, beamSearch=True):
