@@ -46,7 +46,7 @@ class Translator:
                 return candidate[0], candidate[1]
         return candidates[0][0], candidates[0][1]
 
-    def generateSentences(self, candidatesList, num=1000):
+    def generateSentences(self, candidatesList, num=5000):
         sentences = []
         for i in range(1, num):
             tokens = []
@@ -60,8 +60,9 @@ class Translator:
 
     def getSentences(self, spanishSentence, candidatesList, tagList):
         sentences = []
-        #reorderedList = self.reorderCandidatesList(candidatesList, tagList)
+        permutedCandidates = self.permuteCandidatesList(candidatesList, tagList)
         sentences.extend(self.generateSentences(candidatesList))
+        # Do some other sentence permutations
         return sentences
 
     def getBestTranslation(self, spanishSentence, candidatesList, tagList, beamSearch=True):
