@@ -1,8 +1,7 @@
 # -*- coding: UTF-8 -*-
 
 # Python library
-import math, re
-from copy import deepcopy
+import copy, math, re
 from random import choice, random
 
 # Our files
@@ -16,17 +15,19 @@ from nltk.corpus import brown
 from nltk.probability import LidstoneProbDist
 from pattern.text.es import tag
 
+import dill
+
 class Translator:
 
     # Create and store dictionary of word-to-word translations
     def __init__(self):
         self.translationDict = createDict()
         est = lambda fdist, bins: LidstoneProbDist(fdist, 0.2)
-        #self.ngramModel = None
-        self.ngramModel = NgramModel(3, brown.words(), estimator=est)
-        # f = open('my_classifier.pickle', 'wb')
-        # dumps(self.ngramModel, f)
-        # f.close()
+        # with open('ngramModel.pickle','r') as handle:
+        #     self.ngramModel = dill.load(handle)
+        words = brown.words()
+        self.ngramModel = NgramModel(3, words, estimator=est)
+        self.beamSize = 4
         # TODO: store model in its own file?
 
     # STRATEGIES FOR GETTING SENTENCES
@@ -45,7 +46,7 @@ class Translator:
                 return candidate[0], candidate[1]
         return candidates[0][0], candidates[0][1]
 
-    def generateSentences(self, candidatesList, num=100):
+    def generateSentences(self, candidatesList, num=1000):
         sentences = []
         for i in range(1, num):
             tokens = []
@@ -57,30 +58,41 @@ class Translator:
             sentences.append(Sentence(tokens, probs, self.ngramModel))
         return sentences
 
-    def reorderCandidatesList(self, candidatesList, tagList):
-        newList = deepcopy(candidatesList)
-        newTags = deepcopy(tagList)
-
-        for i in range(1,len(candidatesList) - 1):
-            thisTag = pickCommonTag(tagList[i][1])
-            nextTag = pickCommonTag(tagList[i+1][1])
-
-            # Swap noun-adjective
-            if(thisTag == 'noun' and nextTag == 'adjective'):
-                newList[i], newList[i+1] = newList[i+1], newList[i]
-                tagList[i], tagList[i+1] = tagList[i+1], tagList[i]
-        return newList
-
     def getSentences(self, spanishSentence, candidatesList, tagList):
         sentences = []
-        reorderedList = self.reorderCandidatesList(candidatesList, tagList)
-
-        sentences.extend(self.generateSentences(reorderedList))
-        sentences.extend(self.generateSentences(reorderedList))
-
+        #reorderedList = self.reorderCandidatesList(candidatesList, tagList)
+        sentences.extend(self.generateSentences(candidatesList))
         return sentences
 
-    def getBestTranslation(self, spanishSentence, candidatesList, tagList):
+    def getBestTranslation(self, spanishSentence, candidatesList, tagList, beamSearch=True):
+        # if beamSearch:
+        #     sentences = [([''],0.) for i in xrange(self.beamSize)]
+        #     for i in range(len(spanishSentence)):
+        #         candidateSentences = []
+        #         candidateWords = candidatesList[i]
+        #         for sentence, prob in sentences:
+        #             for candidateWord, candidateProb in candidateWords:
+        #                 newSentence = sentence + [candidateWord]
+        #                 context = sentence[-2:]
+        #                 newProb = prob + math.log(candidateProb) - self.ngramModel.logprob(candidateWord, context)
+        #                 candidateSentences.append((newSentence, newProb))
+        #         candidateSentences.sort(key=lambda x:x[1], reverse=True)
+                
+        #         # Eliminate duplicates
+        #         temp = []
+        #         for candidateSentence in candidateSentences:
+        #             if candidateSentence not in temp:
+        #                 temp.append(candidateSentence)
+        #         candidateSentences = temp
+
+        #         sentences = candidateSentences[:self.beamSize]
+        #         # print sentences
+
+        #     bestSentence = max(sentences, key=lambda x:x[1])
+        #     tokens = [word for token in bestSentence[0] for word in token.split(' ')]
+        #     phraseTokens = bestSentence[0]
+        #     return tokens
+        # else:
         sentences = self.getSentences(spanishSentence, candidatesList, tagList)
         sentenceScores = [sentence.score() for sentence in sentences]
         bestSentence = sentences[sentenceScores.index(max(sentenceScores))]
@@ -88,29 +100,119 @@ class Translator:
 
     # Replace punctuation marks in the final translation based on their
     # positions in the original sentence.
-    def addPunctuation(self, translationTokens, punctuation):
+    def addPunctuation(self, phraseTokens, punctuation):
         for p in punctuation:
             if p[2] == 'before':
-                translationTokens[p[0]] = p[1] + translationTokens[p[0]]
+                phraseTokens[p[0]] = p[1] + phraseTokens[p[0]]
             elif p[2] == 'after':
-                translationTokens[p[0]] = translationTokens[p[0]] + p[1]
-        newTokens = [t.decode('utf-8') for t in translationTokens]
+                phraseTokens[p[0]] = phraseTokens[p[0]] + p[1]
+        newTokens = [t.decode('utf-8') for t in phraseTokens]
         return newTokens
+
+    def removeDuplicates(self, translation):
+        translation = translation.split()
+        newTranslation = []
+        i = 0
+        while i < len(translation) - 1:
+            newTranslation.append(translation[i])
+            while translation[i] == translation[i+1]:
+                i += 1
+            i += 1
+        newTranslation.append(translation[i])            
+        return ' '.join(newTranslation)
+        
+    def processSentence(self, rawSentence, tags):
+        wordsToRemove = ['a', 'le', 'se']
+        sentence = copy.deepcopy(rawSentence)
+        sentence = [word.lower() for word in sentence]
+        for word in wordsToRemove:
+            while word in sentence:
+                i = sentence.index(word)
+                sentence.pop(i)
+                tags.pop(i)
+
+        # # Correct part-of-speech tagging
+        # indices = [i for i,x in enumerate(sentence) if x in ['el', 'la', 'los', 'las']]
+        # for i in indices:
+        #     if tags[i+1][1] not in ['NN', 'NNS', 'NNP', 'NNPS']:
+        #         tags[i+1] = (tags[i+1][0], 'NN')
+
+        # Remove any 'de' that follows a preposition
+        indices = [i for i,x in enumerate(sentence) if x=='de']
+        removed = 0
+        for i in indices:
+            if tags[i-1-removed][1] == u'IN':
+                sentence.pop(i-removed)
+                tags.pop(i-removed)
+                removed += 1
+
+        # Replace any 'al' that follows a verb with 'el'
+        indices = [i for i,x in enumerate(sentence) if x=='al']
+        for i in indices:
+            if tags[i-1][1] in ['MD', 'VB', 'VBD', 'VBG', 'VBP', 'VBZ']:
+                sentence[i] = 'el'
+                tags[i] = ('el', 'DT')
+
+        # Add a determiner in front of nouns that follow prepositions
+        indices = [i for i,x in enumerate(tags) if x[1] in ['NN', 'NNS']]
+        added = 0
+        for i in indices:
+            adjustedIndex = i + added
+            if tags[adjustedIndex-1][1] == 'IN':
+                added += 1
+                sentence = sentence[:adjustedIndex] + ['el'] + sentence[adjustedIndex:]
+                tags = tags[:adjustedIndex] + [(tags[adjustedIndex][0], 'DT')] + tags[adjustedIndex:]
+
+        # Flip adjectives and nouns
+        indices = [i for i,x in enumerate(tags) if x[1]=='JJ']
+        for i in indices:
+            if i-1>0 and tags[i-1][1] in ['NN', 'NNS']:
+                punctuationChars = ',.\'\":' 
+                rawNoun, rawAdj = sentence[i-1], sentence[i]
+
+                # Swap punctuation
+                if rawNoun[0] in punctuationChars:
+                    adj = rawNoun[0] + rawAdj
+                    noun = rawNoun[1:]
+                elif rawNoun[-1] in punctuationChars:
+                    adj = rawAdj + rawNoun[-1]
+                    noun = rawNoun[:-1]
+                elif rawAdj[0] in punctuationChars:
+                    noun = rawAdj[0] + rawNoun
+                    adj = rawAdj[1:]
+                elif rawAdj[-1] in punctuationChars:
+                    noun = rawNoun + rawAdj[-1]
+                    adj = rawAdj[:-1]
+                else:
+                    adj = rawAdj
+                    noun = rawNoun
+
+                sentence[i-1] = adj
+                sentence[i] = noun
+
+                tempTag = tags[i]
+                tags[i-1] = tags[i]
+                tags[i] = tempTag
+
+        return sentence, tags
 
     def translate(self, pickHighest=True, tagging=True):
         # TODO: configure turning off various parts? or reimplement baseline
         f = open('corpus_dev.txt')
-        sentences = [line.split() for line in f.readlines()]
-        punctuationChars = ',.\'\":'
+        rawSentences = [line.split() for line in f.readlines()]
+        punctuationChars = ',.\'\":'    
 
         # Iterate through sentences and create translation for each
-        for sentence in sentences:
+        for rawSentence in rawSentences:
             punctuation = []
             
             # Do part-of-speech tagging
-            noPunct = re.sub('[,\.\'\":]','', ' '.join(sentence))
+            noPunct = re.sub('[,\.\'\":]','', ' '.join(rawSentence))
             noPunct = noPunct.decode('utf-8')
             tags = tag(noPunct)
+
+            # Remove words
+            sentence, tags = self.processSentence(rawSentence, tags)
 
             # For each token in the Spanish sentence, store a list of candidates
             # in this outer list. Each candidate is a (translation, probability)
@@ -145,11 +247,12 @@ class Translator:
             # Format result and print
             translationTokens = self.addPunctuation(phraseTokens, punctuation)
             translation = ' '.join(translationTokens)
+            translation = self.removeDuplicates(translation)
             translation = translation[0].capitalize() + translation[1:] # Capitalize first word
             #sentence = [token.encode('utf-8') for token in sentence]
             # print sentence
             # print u" ".join(sentence)
-            joinedSentence = " ".join(sentence)
+            joinedSentence = " ".join(rawSentence)
             print joinedSentence, '\n', translation, '\n\n'
 
 # Run cs124_translate
