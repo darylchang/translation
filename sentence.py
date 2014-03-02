@@ -12,7 +12,7 @@ class Sentence:
         self.phraseTokens = tokensList
         self.removedTokenIndices = removedTokenIndices
         self.priorLogProb = self.getLogProb(probabilities)
-        self.priorWeight = 0.8 # TODO: adjust up/down as needed
+        self.priorWeight = 0.95 # TODO: adjust up/down as needed
         self.model = translationModel
 
     def getLogProb(self, probabilities):

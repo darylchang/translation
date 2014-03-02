@@ -47,7 +47,7 @@ class Translator:
                 return candidate[0], candidate[1]
         return candidates[0][0], candidates[0][1]
 
-    def generateSentences(self, candidatesList, removedTokenIndices=[], num=500):
+    def generateSentences(self, candidatesList, removedTokenIndices=[], num=10000):
         sentences = []
         for i in range(1, num+1):
             tokens = []
@@ -151,8 +151,8 @@ class Translator:
             return bestSentence
         else:
             sentences = self.getSentences(spanishSentence, candidatesList, tagList)
-            sentenceScores = [sentence.score() for sentence in sentences]
-            bestSentence = sentences[sentenceScores.index(max(sentenceScores))]
+            sentenceTups = [(sentence, sentence.score()) for sentence in sentences]
+            bestSentence = max(sentenceTups, key=lambda x:x[1])[0]
             return bestSentence
 
     # Adjust punctuation indices down based on the removed indices of phrases.
