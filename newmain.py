@@ -114,7 +114,7 @@ class Translator:
             confidence = 1.0 - (0.025 * removed)
             #print 'Removed', removed, 'stop words for a confidence value of:',confidence
             if removed > 0:
-                sentences.extend(self.generateSentences(newCandidatesList, confidence, removedTokenIndices, 25000))
+                sentences.extend(self.generateSentences(newCandidatesList, confidence, removedTokenIndices, 2500))
         #print 'Returning', len(sentences), 'with removed stop words'
         return sentences
 
@@ -302,7 +302,7 @@ class Translator:
 
     def translate(self, pickHighest=True, tagging=True):
         # TODO: configure turning off various parts? or reimplement baseline
-        f = open('corpus_dev.txt')
+        f = open('corpus_test.txt')
         rawSentences = [line.split() for line in f.readlines()]
         punctuationChars = ',.\'\":'    
 
