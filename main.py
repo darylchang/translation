@@ -34,7 +34,7 @@ class Translator:
 	# Create and store dictionary of word-to-word translations
 	def __init__(self):
 		self.translationDict = createDict()
-		est = lambda fdist, bins: LidstoneProbDist(fdist, 0.2)
+		#est = lambda fdist, bins: LidstoneProbDist(fdist, 0.2)
 		# self.ngramModel = NgramModel(3, brown.words(), estimator=est)
 		# TODO: store model in its own file?
 
@@ -237,9 +237,31 @@ class Translator:
 			translation = self.addPunctuation(translation, punctuation)
 			print ' '.join(sentence), '\n', translation, '\n\n'
 
+
+	def translateBaseline(self):
+		f = open('corpus_dev.txt')
+		sentences = [line.split() for line in f.readlines()]
+		punctuationChars = ',.\'\":'
+
+		for sentence in sentences:
+			translation = []
+			noPunct = re.sub('[,\.\'\":]','', ' '.join(sentence))
+			noPunct = noPunct.decode('utf-8')
+		
+			for index, token in enumerate(sentence):
+				# Remove punctuation
+				spanishWord = re.sub('[,\.\'\":]','', token).lower()
+
+				# Select English word translation based on translation model
+				englishWord = self.pickEnglishWord(spanishWord, False)
+				translation.append(englishWord)
+
+			print ' '.join(sentence), '\n', ' '.join(translation), '\n\n'
+
 # Run cs124_translate
 if __name__=="__main__":
 	t = Translator()
-	t.translate(pickHighest=True, tagging=True)
+	#t.translate(pickHighest=True, tagging=True)
+	t.translateBaseline()
 
 

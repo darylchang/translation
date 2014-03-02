@@ -129,7 +129,7 @@ harán [verb:do,make,cause,ask,be,render,work,bring,give,perform,carry out,build
 has [verb:have]
 haya [verb:have]
 hermanos [noun:brethren,brother and sister]
-historia [noun:history,story,tale,record,past,yam]
+historia [noun:history,story,tale,record,past,yarn]
 hombres [noun:man]
 hora [noun:time,hour,tour,term] 
 horas [noun:hour]
