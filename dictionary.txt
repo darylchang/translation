@@ -240,7 +240,7 @@ seguridad [noun:security,safety,certainty,assurance,sureness]
 seriada [adjective:serial]
 servicio [noun:service,serving,duty]
 si [conjunction:if,whether,once,supposing]
-sientas [verb:sit,feel,sense,regret]
+sientas [verb:feel,sit,sense,regret]
 sin [preposition:without,out of] [adverb:except]
 sinaloa
 sistema [noun:system,scheme,method]
