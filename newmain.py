@@ -8,6 +8,7 @@ from random import choice, random
 from createDict import createDict
 from fixWords import getFixedCandidateWords, pickCommonTag
 from sentence import Sentence
+from translationUtils import iterBools
 
 # NLP Modules
 from nltk.model.ngram import NgramModel
@@ -22,6 +23,8 @@ class Translator:
     # Create and store dictionary of word-to-word translations
     def __init__(self):
         self.translationDict = createDict()
+        self.words_to_remove = ['of', 'the', 'what', 'in', 'for', 'about', 'that', 'when', 'than', 'by', 'so']
+        self.words_to_add = ['a', 'the']
         est = lambda fdist, bins: LidstoneProbDist(fdist, 0.2)
         # with open('ngramModel.pickle','r') as handle:
         #     self.ngramModel = dill.load(handle)
@@ -46,19 +49,57 @@ class Translator:
                 return candidate[0], candidate[1]
         return candidates[0][0], candidates[0][1]
 
-    def generateSentences(self, candidatesList, num=5000):
+    def generateSentences(self, candidatesList, removedTokenIndices=[], num=500):
         sentences = []
-        for i in range(1, num):
+        for i in range(1, num+1):
             tokens = []
             probs = []
             for candidates in candidatesList:
                 token, prob = self.chooseWord(candidates)
                 tokens.append(token)
                 probs.append(prob)
-            sentences.append(Sentence(tokens, probs, self.ngramModel))
+            sentences.append(Sentence(tokens, probs, removedTokenIndices, self.ngramModel))
         return sentences
 
     # Post-translation processing to generate better sentences
+
+    def hasStopWord(self, subCandidatesList):
+        eligibleWords = []
+        for tup in subCandidatesList:
+            eligibleWords.extend(tup[0].split(' '))
+        return [stop_word for stop_word in self.words_to_remove if stop_word in eligibleWords]
+
+    def shouldRemoveWord(self, candidatesList, index):
+        sublist = candidatesList[index]
+        if not self.hasStopWord(candidatesList[index]):
+            return False
+        if index > 0 and self.hasStopWord(candidatesList[index-1]):
+            return True
+        if (index < len(candidatesList) - 1) and self.hasStopWord(candidatesList[index+1]):
+            return True
+        return False
+
+    # Get candidate sentences with certain common null words in Spanish->English
+    # translations removed.
+    def getRemovedSentences(self, candidatesList):
+        sentences = []
+
+        remove_positions = [i for i in range(0, len(candidatesList)) if self.shouldRemoveWord(candidatesList, i)]
+        remove_arrs = iterBools([], len(remove_positions))
+        for remove_arr in remove_arrs:
+            newCandidatesList = []
+            removedTokenIndices = []
+            for index, candidatesSublist in enumerate(candidatesList):
+                remove = index in remove_positions and remove_arr[remove_positions.index(index)]
+                if remove:
+                    removedTokenIndices.append(index)
+                else:
+                    newCandidatesList.append(candidatesSublist)
+
+            sentences.extend(self.generateSentences(newCandidatesList, removedTokenIndices, 30))
+
+        return sentences
+
     def getPermutedSentences(self, candidatesList, tagList):
         sentences = []
 
@@ -66,7 +107,10 @@ class Translator:
         # words, adding words, English word reordering, etc.
         # TODO: "house white" tagged as noun-noun in spanish. Try retagging
         # in English?
-        return sentences[]
+
+        sentences.extend(self.getRemovedSentences(candidatesList))
+
+        return sentences
 
     def getSentences(self, spanishSentence, candidatesList, tagList):
         sentences = []
@@ -106,11 +150,29 @@ class Translator:
         sentences = self.getSentences(spanishSentence, candidatesList, tagList)
         sentenceScores = [sentence.score() for sentence in sentences]
         bestSentence = sentences[sentenceScores.index(max(sentenceScores))]
-        return bestSentence.tokens, bestSentence.phraseTokens
+        return bestSentence #bestSentence.tokens, bestSentence.phraseTokens
+
+    # Adjust punctuation indices down based on the removed indices of phrases.
+    # For example: [0,2,3] removed [1,2] -> [0,]
+    def adjustPunctuationIndices(self, punctuation, removedIndices):
+        removedIndices.sort
+        punctuationFixed = []
+        for p in punctuation:
+            p = list(p)
+            preceding = len([i for i in removedIndices if i < p[0]])
+            if p[0] in removedIndices:
+                p[0] = p[0] - preceding - 1
+            else:
+                p[0] = p[0] - preceding
+            if p[0] >= 0:
+                punctuationFixed.append(tuple(p))
+        return punctuationFixed
+
 
     # Replace punctuation marks in the final translation based on their
     # positions in the original sentence.
-    def addPunctuation(self, phraseTokens, punctuation):
+    def addPunctuation(self, phraseTokens, removedIndices, punctuation):
+        punctuation = self.adjustPunctuationIndices(punctuation, removedIndices)
         for p in punctuation:
             if p[2] == 'before':
                 phraseTokens[p[0]] = p[1] + phraseTokens[p[0]]
@@ -128,7 +190,8 @@ class Translator:
             while translation[i] == translation[i+1]:
                 i += 1
             i += 1
-        newTranslation.append(translation[i])            
+        newTranslation.append(translation[i])
+
         return ' '.join(newTranslation)
         
     def processSentence(self, rawSentence, tags):
@@ -264,10 +327,13 @@ class Translator:
             
             # Given the candidates list, do post-processing to select a best
             # English sentence translation.
-            translationTokens, phraseTokens = self.getBestTranslation(sentence, candidatesList, tags)
+            bestSentence = self.getBestTranslation(sentence, candidatesList, tags)
+            phraseTokens = bestSentence.phraseTokens
+            removedIndices = bestSentence.removedTokenIndices
 
             # Format result and print
-            translationTokens = self.addPunctuation(phraseTokens, punctuation)
+            translationTokens = self.addPunctuation(phraseTokens, removedIndices, punctuation)
+            #translationTokens = [token.decode('utf-8') for token in translationTokens]
             translation = ' '.join(translationTokens)
             translation = self.removeDuplicates(translation)
             translation = translation[0].capitalize() + translation[1:] # Capitalize first word
