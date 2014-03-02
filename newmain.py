@@ -11,11 +11,9 @@ from sentence import Sentence
 
 # NLP Modules
 from nltk.model.ngram import NgramModel
-from nltk.corpus import brown
+from nltk.corpus import brown, reuters
 from nltk.probability import LidstoneProbDist
 from pattern.text.es import tag
-
-import dill
 
 class Translator:
 
@@ -25,9 +23,9 @@ class Translator:
         est = lambda fdist, bins: LidstoneProbDist(fdist, 0.2)
         # with open('ngramModel.pickle','r') as handle:
         #     self.ngramModel = dill.load(handle)
-        words = brown.words()
+        words = reuters.words() + brown.words()
         self.ngramModel = NgramModel(3, words, estimator=est)
-        self.beamSize = 4
+        self.beamSize = 6
         # TODO: store model in its own file?
 
     # STRATEGIES FOR GETTING SENTENCES
@@ -46,7 +44,7 @@ class Translator:
                 return candidate[0], candidate[1]
         return candidates[0][0], candidates[0][1]
 
-    def generateSentences(self, candidatesList, num=5000):
+    def generateSentences(self, candidatesList, num=10000):
         sentences = []
         for i in range(1, num):
             tokens = []
@@ -66,7 +64,7 @@ class Translator:
         # words, adding words, English word reordering, etc.
         # TODO: "house white" tagged as noun-noun in spanish. Try retagging
         # in English?
-        return sentences[]
+        return sentences
 
     def getSentences(self, spanishSentence, candidatesList, tagList):
         sentences = []
@@ -74,39 +72,49 @@ class Translator:
         sentences.extend(self.getPermutedSentences(candidatesList, tagList))
         return sentences
 
-    def getBestTranslation(self, spanishSentence, candidatesList, tagList, beamSearch=True):
-        # if beamSearch:
-        #     sentences = [([''],0.) for i in xrange(self.beamSize)]
-        #     for i in range(len(spanishSentence)):
-        #         candidateSentences = []
-        #         candidateWords = candidatesList[i]
-        #         for sentence, prob in sentences:
-        #             for candidateWord, candidateProb in candidateWords:
-        #                 newSentence = sentence + [candidateWord]
-        #                 context = sentence[-2:]
-        #                 newProb = prob + math.log(candidateProb) - self.ngramModel.logprob(candidateWord, context)
-        #                 candidateSentences.append((newSentence, newProb))
-        #         candidateSentences.sort(key=lambda x:x[1], reverse=True)
+    def getBestTranslation(self, spanishSentence, candidatesList, tagList, beamSearch=False):
+        if beamSearch:
+            sentences = [([],0.) for i in xrange(self.beamSize)]
+            for i in range(len(spanishSentence)):
+                candidateSentences = []
+                candidateWords = candidatesList[i]
+                for sentence, prob in sentences:
+                    for candidateWord, candidateProb in candidateWords:
+                        newSentence = sentence + [candidateWord]
+                        context = sentence[-2:]
+
+                        # Calculate new probability based on reciprocal negative probabilities
+                        rCandidateProb = -1./math.log(candidateProb) if candidateProb != 1. else 0.
+                        if self.ngramModel.prob(candidateWord, context) < 1.:
+                            rLangProb = -1./(math.log(self.ngramModel.prob(candidateWord, context)))
+                        else:
+                            rLangProb = 10.
+                        #print 'Candidate word: ', candidateWord, 'Translation prob is: ', rCandidateProb, 'Language prob: ', rLangProb
+                        newProb = prob + rCandidateProb + rLangProb
+
+                        candidateSentences.append((newSentence, newProb))
+                candidateSentences.sort(key=lambda x:x[1], reverse=True)
                 
-        #         # Eliminate duplicates
-        #         temp = []
-        #         for candidateSentence in candidateSentences:
-        #             if candidateSentence not in temp:
-        #                 temp.append(candidateSentence)
-        #         candidateSentences = temp
+                # Eliminate duplicates
+                temp = []
+                for candidateSentence in candidateSentences:
+                    if candidateSentence not in temp:
+                        temp.append(candidateSentence)
+                candidateSentences = temp
 
-        #         sentences = candidateSentences[:self.beamSize]
-        #         # print sentences
+                sentences = candidateSentences[:self.beamSize]
+                #print sentences, '\n'
 
-        #     bestSentence = max(sentences, key=lambda x:x[1])
-        #     tokens = [word for token in bestSentence[0] for word in token.split(' ')]
-        #     phraseTokens = bestSentence[0]
-        #     return tokens
-        # else:
-        sentences = self.getSentences(spanishSentence, candidatesList, tagList)
-        sentenceScores = [sentence.score() for sentence in sentences]
-        bestSentence = sentences[sentenceScores.index(max(sentenceScores))]
-        return bestSentence.tokens, bestSentence.phraseTokens
+            bestSentence = max(sentences, key=lambda x:x[1])
+            tokens = [word for token in bestSentence[0] for word in token.split(' ')]
+            phraseTokens = bestSentence[0]
+            #print tokens, phraseTokens
+            return tokens, phraseTokens
+        else:
+            sentences = self.getSentences(spanishSentence, candidatesList, tagList)
+            sentenceScores = [sentence.score() for sentence in sentences]
+            bestSentence = sentences[sentenceScores.index(max(sentenceScores))]
+            return bestSentence.tokens, bestSentence.phraseTokens
 
     # Replace punctuation marks in the final translation based on their
     # positions in the original sentence.
@@ -147,10 +155,12 @@ class Translator:
         #     if tags[i+1][1] not in ['NN', 'NNS', 'NNP', 'NNPS']:
         #         tags[i+1] = (tags[i+1][0], 'NN')
 
-        # Remove any 'de' that follows a preposition
+        # Remove any 'de' that follows a preposition and 
+        # label all 'de's as prepositions
         indices = [i for i,x in enumerate(sentence) if x=='de']
         removed = 0
         for i in indices:
+            # tags[i] = (tags[i][0], 'IN')
             if tags[i-1-removed][1] == u'IN':
                 sentence.pop(i-removed)
                 tags.pop(i-removed)
@@ -171,7 +181,7 @@ class Translator:
             if tags[adjustedIndex-1][1] == 'IN':
                 added += 1
                 sentence = sentence[:adjustedIndex] + ['el'] + sentence[adjustedIndex:]
-                tags = tags[:adjustedIndex] + [(tags[adjustedIndex][0], 'DT')] + tags[adjustedIndex:]
+                tags = tags[:adjustedIndex] + [('el', 'DT')] + tags[adjustedIndex:]
 
         # Flip adjectives and nouns
         indices = [i for i,x in enumerate(tags) if x[1]=='JJ']
@@ -215,7 +225,7 @@ class Translator:
                 tags[i+1] = tags[i]
                 sentence[i] = verb
                 tags[i] = verbTag
-
+        #print tags
         return sentence, tags
 
     def translate(self, pickHighest=True, tagging=True):
