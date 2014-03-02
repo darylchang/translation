@@ -45,18 +45,18 @@ class Translator:
 		return choice(candidateWords)[0]
 
 	def translateBaseline(self):
-		f = open('corpus_dev.txt')
+		f = open('corpus_test.txt')
 		sentences = [line.split() for line in f.readlines()]
 		punctuationChars = ',.\'\":'
 
 		for sentence in sentences:
 			translation = []
-			noPunct = re.sub('[,\.\'\":]','', ' '.join(sentence))
+			noPunct = re.sub('[,\.\'\":;?-()]','', ' '.join(sentence))
 			noPunct = noPunct.decode('utf-8')
 		
 			for token in sentence:
 				# Remove punctuation
-				spanishWord = re.sub('[,\.\'\":]','', token).lower()
+				spanishWord = re.sub('[,\.\'\":;?-!\(\)]','', token).lower()
 
 				# Select English word translation based on translation model
 				englishWord = self.pickEnglishWord(spanishWord, False)

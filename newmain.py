@@ -304,14 +304,14 @@ class Translator:
         # TODO: configure turning off various parts? or reimplement baseline
         f = open('corpus_test.txt')
         rawSentences = [line.split() for line in f.readlines()]
-        punctuationChars = ',.\'\":'    
+        punctuationChars = ',.\'\":;?-!()'    
 
         # Iterate through sentences and create translation for each
         for rawSentence in rawSentences:
             punctuation = []
             
             # Do part-of-speech tagging
-            noPunct = re.sub('[,\.\'\":]','', ' '.join(rawSentence))
+            noPunct = re.sub('[,\.\'\":;?-\(\)]','', ' '.join(rawSentence))
             noPunct = noPunct.decode('utf-8')
             tags = tag(noPunct)
 
