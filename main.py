@@ -248,7 +248,7 @@ class Translator:
 			noPunct = re.sub('[,\.\'\":]','', ' '.join(sentence))
 			noPunct = noPunct.decode('utf-8')
 		
-			for index, token in enumerate(sentence):
+			for token in sentence:
 				# Remove punctuation
 				spanishWord = re.sub('[,\.\'\":]','', token).lower()
 
