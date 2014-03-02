@@ -27,7 +27,7 @@ class Translator:
         # with open('ngramModel.pickle','r') as handle:
         #     self.ngramModel = dill.load(handle)
         words = reuters.words() + brown.words()
-        self.ngramModel = None #NgramModel(3, words, estimator=est)
+        self.ngramModel = NgramModel(3, words, estimator=est)
         self.beamSize = 6
         # TODO: store model in its own file?
 
@@ -114,8 +114,8 @@ class Translator:
             confidence = 1.0 - (0.025 * removed)
             #print 'Removed', removed, 'stop words for a confidence value of:',confidence
             if removed > 0:
-                sentences.extend(self.generateSentences(newCandidatesList, confidence, removedTokenIndices, 2500))
-        print 'Returning', len(sentences), 'with removed stop words'
+                sentences.extend(self.generateSentences(newCandidatesList, confidence, removedTokenIndices, 25000))
+        #print 'Returning', len(sentences), 'with removed stop words'
         return sentences
 
     # Any special post-processing steps
