@@ -7,12 +7,13 @@ class Sentence:
     #   ['The', 'cat', 'went to', 'the', 'city park']
     # 2. A list of the prior probabilities (via the translation model) for each token. For example:
     #   [0.25, 0.5, 0.83333, 0.1]
-    def __init__(self, tokensList, probabilities, removedTokenIndices=[], translationModel=None):
+    def __init__(self, tokensList, probabilities, confidenceValue=1.0, removedTokenIndices=[], translationModel=None):
         self.tokens = [word for token in tokensList for word in token.split(' ')]
         self.phraseTokens = tokensList
         self.removedTokenIndices = removedTokenIndices
         self.priorLogProb = self.getLogProb(probabilities)
         self.priorWeight = 0.95 # TODO: adjust up/down as needed
+        self.confidence = confidenceValue
         self.model = translationModel
 
     def getLogProb(self, probabilities):
@@ -35,4 +36,4 @@ class Sentence:
         langModelScore *= (1.0 - self.priorWeight)
         totalScore = priorScore + langModelScore
         #print 'Returning total score =', totalScore, 'from components langModel =', langModelScore, 'priorModel =', priorScore
-        return totalScore
+        return (self.confidence * (totalScore+50.0))

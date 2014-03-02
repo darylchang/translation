@@ -91,9 +91,9 @@ def fixWords(candidates, spanishWord, tag, commonTag):
 # Given a list of mappings from parts of speech to tuples (word, prob), return a list
 # of tuples (word, prob), where duplicate words are given their highest probability
 # from all parts of speech.
-def flattenDict(dict):
+def flattenDict(wordDict):
     arr = []
-    tupleList = [x for senseTup in dict for x in senseTup[1]]
+    tupleList = [x for senseTup in wordDict for x in senseTup[1]]
     wordSet = set([tup[0] for tup in tupleList])
     for word in wordSet:
         maxProb = max([tup[1] for tup in tupleList if tup[0]==word])

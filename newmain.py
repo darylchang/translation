@@ -47,7 +47,7 @@ class Translator:
                 return candidate[0], candidate[1]
         return candidates[0][0], candidates[0][1]
 
-    def generateSentences(self, candidatesList, removedTokenIndices=[], num=10000):
+    def generateSentences(self, candidatesList, confidenceValue=1.0, removedTokenIndices=[], num=100000):
         sentences = []
         for i in range(1, num+1):
             tokens = []
@@ -56,7 +56,7 @@ class Translator:
                 token, prob = self.chooseWord(candidates)
                 tokens.append(token)
                 probs.append(prob)
-            sentences.append(Sentence(tokens, probs, removedTokenIndices, self.ngramModel))
+            sentences.append(Sentence(tokens, probs, confidenceValue, removedTokenIndices, self.ngramModel))
         return sentences
 
     # Post-translation processing to generate better sentences
@@ -71,6 +71,22 @@ class Translator:
         sublist = candidatesList[index]
         if not self.hasStopWord(candidatesList[index]):
             return False
+
+        # Keep vital stop-word phrases like "in the", "of the", etc together
+        saveWords = ['of', 'in', 'at', 'for', 'to']
+        for candidate in candidatesList[index]:
+            tokens = candidate[0].split(' ')
+            if len(tokens) > 1 and tokens[-1] == 'the':
+                return False
+            if tokens[0] == 'the' and index > 0:
+                for prevCandidate in candidatesList[index-1]:
+                    if prevCandidate[0] in saveWords:
+                        return False
+            if tokens[0] in saveWords and index < len(candidatesList) - 1:
+                for nextCandidate in candidatesList[index+1]:
+                    if nextCandidate[0] == 'the':
+                        return False
+
         if index > 0 and self.hasStopWord(candidatesList[index-1]):
             return True
         if (index < len(candidatesList) - 1) and self.hasStopWord(candidatesList[index+1]):
@@ -83,28 +99,28 @@ class Translator:
         sentences = []
 
         remove_positions = [i for i in range(0, len(candidatesList)) if self.shouldRemoveWord(candidatesList, i)]
-        remove_arrs = iterBools([], len(remove_positions))
+        remove_arrs = iterBools([], remove_positions, 0, len(remove_positions))
         for remove_arr in remove_arrs:
             newCandidatesList = []
             removedTokenIndices = []
+            removed = 0
             for index, candidatesSublist in enumerate(candidatesList):
                 remove = index in remove_positions and remove_arr[remove_positions.index(index)]
                 if remove:
+                    removed += 1
                     removedTokenIndices.append(index)
                 else:
                     newCandidatesList.append(candidatesSublist)
-
-            sentences.extend(self.generateSentences(newCandidatesList, removedTokenIndices, 30))
-
+            confidence = 1.0 - (0.025 * removed)
+            #print 'Removed', removed, 'stop words for a confidence value of:',confidence
+            if removed > 0:
+                sentences.extend(self.generateSentences(newCandidatesList, confidence, removedTokenIndices, 2500))
+        print 'Returning', len(sentences), 'with removed stop words'
         return sentences
 
+    # Any special post-processing steps
     def getPermutedSentences(self, candidatesList, tagList):
         sentences = []
-
-        # Do general permutations on the candidates list, i.e., removing
-        # words, adding words, English word reordering, etc.
-        # TODO: "house white" tagged as noun-noun in spanish. Try retagging
-        # in English?
         sentences.extend(self.getRemovedSentences(candidatesList))
         return sentences
 
@@ -148,15 +164,14 @@ class Translator:
                 #print sentences, '\n'
 
             bestSentence = max(sentences, key=lambda x:x[1])
-            return bestSentence
+            return bestSentence[0], []
         else:
             sentences = self.getSentences(spanishSentence, candidatesList, tagList)
             sentenceTups = [(sentence, sentence.score()) for sentence in sentences]
             bestSentence = max(sentenceTups, key=lambda x:x[1])[0]
-            return bestSentence
+            return bestSentence.phraseTokens, bestSentence.removedTokenIndices
 
     # Adjust punctuation indices down based on the removed indices of phrases.
-    # For example: [0,2,3] removed [1,2] -> [0,]
     def adjustPunctuationIndices(self, punctuation, removedIndices):
         removedIndices.sort
         punctuationFixed = []
@@ -214,10 +229,10 @@ class Translator:
 
         # Remove any 'de' that follows a preposition and 
         # label all 'de's as prepositions
-        indices = [i for i,x in enumerate(sentence) if x=='de']
+        indices = [i for i,x in enumerate(sentence) if x=='de' or x=='del']
         removed = 0
         for i in indices:
-            # tags[i] = (tags[i][0], 'IN')
+            tags[i-removed] = (tags[i-removed][0], 'IN')
             if tags[i-1-removed][1] == u'IN':
                 sentence.pop(i-removed)
                 tags.pop(i-removed)
@@ -231,14 +246,14 @@ class Translator:
                 tags[i] = ('el', 'DT')
 
         # Add a determiner in front of nouns that follow prepositions
-        indices = [i for i,x in enumerate(tags) if x[1] in ['NN', 'NNS']]
-        added = 0
-        for i in indices:
-            adjustedIndex = i + added
-            if tags[adjustedIndex-1][1] == 'IN':
-                added += 1
-                sentence = sentence[:adjustedIndex] + ['el'] + sentence[adjustedIndex:]
-                tags = tags[:adjustedIndex] + [('el', 'DT')] + tags[adjustedIndex:]
+        # indices = [i for i,x in enumerate(tags) if x[1] in ['NN', 'NNS']]
+        # added = 0
+        # for i in indices:
+        #     adjustedIndex = i + added
+        #     if tags[adjustedIndex-1][1] == 'IN':
+        #         added += 1
+        #         sentence = sentence[:adjustedIndex] + ['el'] + sentence[adjustedIndex:]
+        #         tags = tags[:adjustedIndex] + [('el', 'DT')] + tags[adjustedIndex:]
 
         # Flip adjectives and nouns
         indices = [i for i,x in enumerate(tags) if x[1]=='JJ']
@@ -331,9 +346,7 @@ class Translator:
             
             # Given the candidates list, do post-processing to select a best
             # English sentence translation.
-            bestSentence = self.getBestTranslation(sentence, candidatesList, tags)
-            phraseTokens = bestSentence.phraseTokens
-            removedIndices = bestSentence.removedTokenIndices
+            phraseTokens, removedIndices = self.getBestTranslation(sentence, candidatesList, tags)
 
             # Format result and print
             translationTokens = self.addPunctuation(phraseTokens, removedIndices, punctuation)
