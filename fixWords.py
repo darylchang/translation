@@ -12,7 +12,8 @@ moodMap = {None:None, 'indicative':'indicative', 'imperative':'indicative', 'con
 aspectMap = {None:None, 'perfective':'imperfective', 'imperfective':'imperfective', 'progressive':'progressive'}
 
 def fixVerb(elem, verb, tag):
-    englishWord = elem[0]
+    englishTokens = elem[0].split()
+    englishWord = englishTokens[0]
     verb = verb.decode('utf-8')
     base = find_lemmata([[verb, tag]])[0][2]
     # Find the tense that will recreate the verb
@@ -38,6 +39,7 @@ def fixVerb(elem, verb, tag):
                 englishWord = 'will ' + englishWord
             elif englishTense[0] == 'infinitive':
                 englishWord = 'to ' + englishWord
+    englishWord = englishWord + ' '.join(englishTokens[1:])
     return (englishWord, elem[1])
 
 

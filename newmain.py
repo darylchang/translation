@@ -27,7 +27,7 @@ class Translator:
         # with open('ngramModel.pickle','r') as handle:
         #     self.ngramModel = dill.load(handle)
         words = reuters.words() + brown.words()
-        self.ngramModel = NgramModel(3, words, estimator=est)
+        self.ngramModel = None #NgramModel(3, words, estimator=est)
         self.beamSize = 6
         # TODO: store model in its own file?
 
