@@ -47,7 +47,7 @@ class Translator:
                 return candidate[0], candidate[1]
         return candidates[0][0], candidates[0][1]
 
-    def generateSentences(self, candidatesList, confidenceValue=1.0, removedTokenIndices=[], num=100000):
+    def generateSentences(self, candidatesList, confidenceValue=1.0, removedTokenIndices=[], num=1000):
         sentences = []
         for i in range(1, num+1):
             tokens = []
@@ -114,7 +114,7 @@ class Translator:
             confidence = 1.0 - (0.025 * removed)
             #print 'Removed', removed, 'stop words for a confidence value of:',confidence
             if removed > 0:
-                sentences.extend(self.generateSentences(newCandidatesList, confidence, removedTokenIndices, 2500))
+                sentences.extend(self.generateSentences(newCandidatesList, confidence, removedTokenIndices, 25))
         #print 'Returning', len(sentences), 'with removed stop words'
         return sentences
 
@@ -302,9 +302,9 @@ class Translator:
 
     def translate(self, pickHighest=True, tagging=True):
         # TODO: configure turning off various parts? or reimplement baseline
-        f = open('corpus_test.txt')
+        f = open('corpus_dev.txt')
         rawSentences = [line.split() for line in f.readlines()]
-        punctuationChars = ',.\'\":;'   
+        punctuationChars = ',.\'\":;-'   
 
         # Iterate through sentences and create translation for each
         for rawSentence in rawSentences:
@@ -336,7 +336,7 @@ class Translator:
                     punctuation.append((index, token[-2], 'after'))
                 if token[-1] in punctuationChars:
                     punctuation.append((index, token[-1], 'after'))
-                spanishWord = re.sub('[,\.\'\":]','', token).lower()
+                spanishWord = re.sub('[,\.\'\":;-]','', token).lower()
                 
                 # Generate candidate translations for this token
                 wordTag = tags[index][1]
